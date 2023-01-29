@@ -1,0 +1,23 @@
+{
+  "name": "hive-js",
+  "version": "0.1.0",
+  "description": "server side api for the hive project",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yair-hive/hive-js\u001b[C.git"
+  },
+  "keywords": [
+    "hive",
+    "js"
+  ],
+  "author": "yair man",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yair-hive/hive-js\u001b[C/issues"
+  },
+  "homepage": "https://github.com/yair-hive/hive-js\u001b[C#readme"
+}
