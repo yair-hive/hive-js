@@ -1,11 +1,21 @@
 const express = require('express')
 const map_router = require('./src/routs/map')
 const ws = require('ws');
-const socket_server = new ws.Server({noServer: true})
+const wss = new ws.Server({noServer: true})
 
-socket_server.on('connection', ()=>{
-    console.log('conn')
-})
+wss.on('listening', ()=> console.log('web socket start'))
+
+wss.on('connection', function connection(ws) {
+    console.log(`
+    connection starts`)
+    ws.on('message', function message(data) {
+        wss.clients.forEach(function(client) {
+            client.send(data.toString());
+        });        
+    });
+});
+
+wss.on('error', (err)=> console.log(err))
 
 const app = express()
 const port = 3020
@@ -17,7 +27,7 @@ const server = app.listen(port, function(){
 })
 
 server.on('upgrade', (request, socket, head) => {
-    socket_server.handleUpgrade(request, socket, head, socket => {
-        socket_server.emit('connection', socket, request);
+    wss.handleUpgrade(request, socket, head, socket => {
+        wss.emit('connection', socket, request);
     });
 })
