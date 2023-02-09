@@ -259,6 +259,27 @@ function getSeatWithScore(seats, score){
     })
     return new_seats
 }
+function getSeatWithTag(seats, tag){
+    var new_seats = []
+    seats.forEach((seat, index) => {
+        if(seat.tags){
+            seat.tags = seat.tags.map(tag=> Number(tag))
+            if(seat.tags.indexOf(tag) > -1){
+                seat.index = index
+                new_seats.push(seat)
+            }
+        }
+    })
+    return new_seats
+}
+function getSeatWithTagAndScore(seats){
+    var score = getSeatsScores(seats)[0]
+    var new_seats = []
+    seats.forEach((seat) => {
+        if(seat.score == score) new_seats.push(seat.index)
+    })
+    return new_seats
+}
 function addAllMatchs(matching_list, map_id){
     return new Promise((resolve, reject) => {
         var query_string = ``
@@ -302,29 +323,37 @@ router.get('/scheduling/:map_name', async (req, res)=>{
     var completed_iterations = 0
     var progress = 0
     while(seats.length != 0 && guests.length != 0){
-        var seats_scores = getSeatsScores(seats)
         var guests_scores = getGuestsScores(guests)
         var height_guests = getGuestWithScore(guests, guests_scores[0])
-        var height_seats = getSeatWithScore(seats, seats_scores[0])
         var random_for_guest = getRandomNumber(height_guests.length -1)
-        var random_for_seat = getRandomNumber(height_seats.length -1)
         var random_guest_index = height_guests[random_for_guest]
+        var guest = guests[random_guest_index]
+        var guest_id = guest.id
+
+        var seats_scores = getSeatsScores(seats)
+        var height_seats = getSeatWithScore(seats, seats_scores[0])
+
+        if(guest.requests){
+            var seats_with_tags = getSeatWithTag(seats, guest.requests[0])
+            if(getSeatWithTagAndScore(seats_with_tags).length > 0) height_seats = getSeatWithTagAndScore(seats_with_tags)
+        }
+
+        var random_for_seat = getRandomNumber(height_seats.length -1)
         var random_seat_index = height_seats[random_for_seat]
-        var guest_id = guests[random_guest_index].id
-        var seat_id = seats[random_seat_index].id
+        var seat = seats[random_seat_index]
+        var seat_id = seat.id
+
         matching_list.push({guest: guest_id, seat: seat_id})
         guests.splice(random_guest_index, 1)
         seats.splice(random_seat_index, 1)
+
         completed_iterations++
         progress = (completed_iterations / total_iterations) * 100
         progress = Math.round(progress)
         res.write(`data: { "progress": ${progress} }\n\n`);
+
         await addAllMatchs([{guest: guest_id, seat: seat_id}], map_result[0].id)
     }
-
-    // await addAllMatchs(matching_list, map_result[0].id)
-    // res.json(await addAllMatchs(matching_list, map_result[0].id))
-    // res.send('gg')
 })
 
 router.get('/seats_score/:map_name', async (req, res)=>{
@@ -342,7 +371,8 @@ router.get('/seats_score/:map_name', async (req, res)=>{
     var guests = calculat_guests(guests_result, guests_group)
     seats = calculat_tags(seats, tags_belongs)
     guests = calculat_requests(guests, requests)
-    res.json([seats, guests])
+    res.json(getSeatWithTag(seats, "17"))
+    // res.json([seats, guests])
 })
 
 module.exports = router
