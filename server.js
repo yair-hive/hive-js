@@ -1,28 +1,25 @@
 const express = require('express')
 const map_router = require('./src/routs/map')
 const actions_router = require('./src/routs/actions')
-const ws = require('ws');
-const wss = new ws.Server({noServer: true})
-
-wss.on('listening', ()=> console.log('web socket start'))
-
-wss.on('connection', function connection(ws) {
-    console.log(`
-    connection starts`)
-    ws.on('message', function message(data) {
-        wss.clients.forEach(function(client) {
-            client.send(data.toString());
-        });        
-    });
-});
-
-wss.on('error', (err)=> console.log(err))
+const project_router = require('./src/routs/project')
+var bodyParser = require('body-parser')
+const wss = require('./src/socket')
 
 const app = express()
 const port = 3020
 
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json())
+
+app.use((req, res, next)=>{
+    res.set('Access-Control-Allow-Origin', req.get('origin'))
+    res.set('Access-Control-Allow-Credentials', 'true')
+    next()
+})
+
 app.use('/map', map_router)
 app.use('/actions', actions_router)
+app.use('/project', project_router)
 
 const server = app.listen(port, function(){
     console.log("express start")

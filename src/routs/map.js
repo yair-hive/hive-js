@@ -1,29 +1,35 @@
+const con = require('../db/mysql/connction')
 const express = require('express')
-const mysql = require('mysql')
 const router = express.Router()
+const {getProjectId, mysqlQuery} = require('../db/mysql/functions')
 
-const con = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "",
-    database: "hive"
+async function getAllMaps(project_name){
+    var project_id = await getProjectId(project_name)
+    var query_string = `SELECT * FROM maps WHERE project = ${project_id}`
+    return await mysqlQuery(query_string)
+
+}
+
+async function createMap(project_name, map_name, rows, cols){
+    var project_id = await getProjectId(project_name)
+    var query_string = `INSERT INTO maps(map_name, rows_number, columns_number, project) VALUES('${map_name}', '${rows}', '${cols}', '${project_id}')`;
+    return await mysqlQuery(query_string)
+}
+
+router.get('/:project_name', async (req, res)=>{
+    var maps = await getAllMaps(req.params.project_name)
+    res.json(maps)
 })
 
-router.get('/:map_name', (req, res)=>{
-    con.connect((err)=>{
-        if(err){
-            console.log(err)
-            res.send(err)
-        }
-        var query_string = `SELECT * FROM maps WHERE map_name='${req.params.map_name}'`
-        con.query(query_string, (err, result)=>{
-            if(err){
-                console.log(err)
-                res.send(err)
-            }
-            res.json(result)
-        })
-    })
+router.post('/:project_name/create', async (req, res)=>{
+    var {project_name} = req.params
+    var {map_name, rows, cols} = req.body
+    var result = await createMap(project_name, map_name, rows, cols)
+    res.json(result)
+})
+
+router.get('/', (req, res)=>{
+    res.send('FSF')
 })
 
 module.exports = router

@@ -38,37 +38,59 @@ function row_score(seats){
 function col_score(seats, map){
     var cols = [];
     map.columns_number = Number(map.columns_number)
+    var to = map.cols_to
     var cols_even = Math.round(map.columns_number / 2) === Math.floor(map.columns_number / 2)
     var cols_middle = Math.round(map.columns_number / 2)
     seats.forEach(seat =>{
         if(cols.indexOf(seat.col_num) === -1) cols.push(seat.col_num);
     })
     cols.sort(function(a, b) { return a - b; });
-    cols.reverse()
 
     var seats_by_col = {}
     cols.forEach(col => seats_by_col[col.toString()] = [])
     seats.forEach((seat, index) => seats_by_col[seat.col_num].push(index))
 
     var i = 0 
-    for(let col of cols){
-        if(cols_even){
-            if(col != (cols_middle + 1)){
-                if(col < cols_middle) i++; 
-                if(col > cols_middle) i--;    
+    if(to === 'center'){
+        cols.reverse()
+        for(let col of cols){
+            if(cols_even){
+                if(col != (cols_middle + 1)){
+                    if(col < cols_middle) i++; 
+                    if(col > cols_middle) i--;    
+                }
+                if(col == cols_middle) i++;
+                score = Math.abs(i);
+            }else{
+                if(col < cols_middle)  i--;
+                if(col > cols_middle) i++; 
+                if(col == cols_middle) i++;
+                score = i;
+                if(col == cols_middle) score = Math.abs(i);
             }
-            if(col == cols_middle) i++;
-            score = Math.abs(i);
-        }else{
-            if(col < cols_middle)  i--;
-            if(col > cols_middle) i++; 
-            if(col == cols_middle) i++;
-            score = i;
-            if(col == cols_middle) score = Math.abs(i);
+            seats_by_col[col].forEach(index => {
+                seats[index].col_score = score
+            })
         }
-        seats_by_col[col].forEach(index => {
-            seats[index].col_score = score
-        })
+    }
+    if(to === 'left'){
+        cols.reverse()
+        var score = 0
+        for(let col of cols){
+            score ++
+            seats_by_col[col].forEach(index => {
+                seats[index].col_score = score
+            })
+        }
+    }
+    if(to === 'right'){
+        var score = 0
+        for(let col of cols){
+            score ++
+            seats_by_col[col].forEach(index => {
+                seats[index].col_score = score
+            })
+        }
     }
     return seats
 }
@@ -78,13 +100,15 @@ function group_score(seats, groups){
     seats.forEach(seat => seats_as_object[seat.id] = seat)
 
     for(let group of groups){
-        var group_seats = []
         var cols = []
-        for(let seat_id of group){
-            var seat = seats_as_object[seat_id]
-            var col = seat.col_num
-            if(cols.indexOf(col) === -1) cols.push(col)
-            group_seats.push(seat)
+        for(let i = group.from_col; i <= group.to_col; i++){
+            cols.push(i)
+        }
+        var group_seats = []
+        for(let seat of seats){
+            if(seat.col_num >= group.from_col && seat.col_num <= group.to_col && seat.row_num >= group.from_row && seat.row_num <= group.to_row){
+                group_seats.push(seat)  
+            }
         }
 
         var seats_by_col = {}
@@ -151,9 +175,28 @@ function calculat_requests(guests, requests){
         return guest
     })
 }
-function getMap(map_name){
+
+function get_project_id(project_name){
     return new Promise((resolve, reject) => {
-        var query_string = `SELECT * FROM maps WHERE map_name='${map_name}'`
+        var query_string = `SELECT * FROM projects WHERE name='${project_name}'`
+        con.query(query_string, (err, map_result)=>{
+            if(err) reject(err)
+            else resolve(map_result[0].id)
+        })
+    })
+}
+function getMap(project_id, map_name){
+    return new Promise((resolve, reject) => {
+        var query_string = `SELECT * FROM maps WHERE project='${project_id}' AND map_name = '${map_name}'`
+        con.query(query_string, (err, map_result)=>{
+            if(err) reject(err)
+            else resolve(map_result[0])
+        })
+    })
+}
+function getMaps(project_id){
+    return new Promise((resolve, reject) => {
+        var query_string = `SELECT * FROM maps WHERE project='${project_id}'`
         con.query(query_string, (err, map_result)=>{
             if(err) reject(err)
             else resolve(map_result)
@@ -162,7 +205,7 @@ function getMap(map_name){
 }
 function getSeats(map_id){
     return new Promise((resolve, reject) => {
-        var query_string = `SELECT * FROM seats WHERE belong='${map_id}';`
+        var query_string = `SELECT * FROM seats WHERE map='${map_id}';`
         con.query(query_string, (err, seats_result)=>{
             if(err) reject(err)
             else resolve(seats_result)
@@ -171,35 +214,7 @@ function getSeats(map_id){
 }
 function getSeatsGroups(map_id){
     return new Promise((resolve, reject) => {
-        var query_string = `SELECT * FROM seats_groups WHERE belong = '${map_id}';`;
-        con.query(query_string, (err, result)=>{
-            if(err) reject(err)
-            else resolve(result)
-        })       
-    })
-}
-function getSeatsInGroups(groups, map_id){
-    return new Promise((resolve, reject) => {
-        var query_string = ``
-        groups.forEach(group => query_string += `SELECT seat FROM seat_groups_belong WHERE belong = '${map_id}' AND group_id = '${group.id}' AND group_type = 'col';`)
-        con.query(query_string, (err, result)=>{
-            if(err) reject(err)
-            else resolve(result)
-        })       
-    })
-}
-function getGuests(map_id){
-    return new Promise((resolve, reject) => {
-        var query_string = `SELECT * FROM guests WHERE belong = '${map_id}';`;
-        con.query(query_string, (err, result)=>{
-            if(err) reject(err)
-            else resolve(result)
-        })       
-    })
-}
-function getGuestsGroup(map_id){
-    return new Promise((resolve, reject) => {
-        var query_string = `SELECT * FROM guests_groups WHERE belong = '${map_id}';`;
+        var query_string = `SELECT * FROM seats_groups WHERE map = '${map_id}';`;
         con.query(query_string, (err, result)=>{
             if(err) reject(err)
             else resolve(result)
@@ -208,22 +223,42 @@ function getGuestsGroup(map_id){
 }
 function getTagsBelongs(map_id){
     return new Promise((resolve, reject) => {
-        var query_string = `SELECT * FROM seat_groups_belong WHERE belong = '${map_id}' AND group_type = 'tag'`;
+        var query_string = `SELECT * FROM tag_belongs WHERE map = '${map_id}'`;
         con.query(query_string, (err, result)=>{
             if(err) reject(err)
             else resolve(result)
         })       
     })
 }
-function getRequests(map_id){
+
+function getGuests(project_id){
     return new Promise((resolve, reject) => {
-        var query_string = `SELECT * FROM guests_requests WHERE belong = '${map_id}'`;
+        var query_string = `SELECT * FROM guests WHERE project = '${project_id}';`;
         con.query(query_string, (err, result)=>{
             if(err) reject(err)
             else resolve(result)
         })       
     })
 }
+function getGuestsGroup(project_id){
+    return new Promise((resolve, reject) => {
+        var query_string = `SELECT * FROM guests_groups WHERE project = '${project_id}';`;
+        con.query(query_string, (err, result)=>{
+            if(err) reject(err)
+            else resolve(result)
+        })       
+    })
+}
+function getRequests(project_id){
+    return new Promise((resolve, reject) => {
+        var query_string = `SELECT * FROM guests_requests WHERE project = '${project_id}'`;
+        con.query(query_string, (err, result)=>{
+            if(err) reject(err)
+            else resolve(result)
+        })       
+    })
+}
+
 function getRandomNumber(max) {
     let min = 0
     let step1 = max - min + 1;
@@ -280,14 +315,14 @@ function getSeatWithTagAndScore(seats){
     })
     return new_seats
 }
-function addAllMatchs(matching_list, map_id){
+function addAllMatchs(matching_list, project_id){
     return new Promise((resolve, reject) => {
         var query_string = ``
         matching_list.forEach(match => {
             var {guest, seat} = match
             query_string += `DELETE FROM belong WHERE guest='${guest}';`;
             query_string += `DELETE FROM belong WHERE seat='${seat}';`;
-            query_string += `INSERT INTO belong(guest, seat, map_belong) VALUES('${guest}', '${seat}', '${map_id}');`;
+            query_string += `INSERT INTO belong(guest, seat, project) VALUES('${guest}', '${seat}', '${project_id}');`;
         })
         con.query(query_string, (err)=>{
             if(err) reject(err)
@@ -296,7 +331,7 @@ function addAllMatchs(matching_list, map_id){
     })
 }
 
-router.get('/scheduling/:map_name', async (req, res)=>{
+router.get('/scheduling/:project_name', async (req, res)=>{
     res.set('Access-Control-Allow-Origin', req.get('origin'))
 
     res.set({
@@ -305,20 +340,26 @@ router.get('/scheduling/:map_name', async (req, res)=>{
         'Connection': 'keep-alive'
     });
 
+    var project_id = await get_project_id(req.params.project_name)
+
+    var seats = []
     var matching_list = []
-    var map_result = await getMap(req.params.map_name)
-    var seats_result = await getSeats(map_result[0].id)
-    var groups_result = await getSeatsGroups(map_result[0].id)
-    var seats_in_groups = await getSeatsInGroups(groups_result, map_result[0].id)
-    seats_in_groups = seats_in_groups.map(group => group.map(seat => seat.seat))
-    var guests_result = await getGuests(map_result[0].id)
-    var tags_belongs = await getTagsBelongs(map_result[0].id)
-    var guests_group = await getGuestsGroup(map_result[0].id)
-    var requests = await getRequests(map_result[0].id)
-    var seats = calculat_seats(seats_result, map_result[0], seats_in_groups) 
+    var maps = await getMaps(project_id)
+    for(let map of maps){
+        var seats_result = await getSeats(map.id)
+        var groups_result = await getSeatsGroups(map.id)
+        var tags_belongs = await getTagsBelongs(map.id)
+        var map_seats = calculat_seats(seats_result, map, groups_result) 
+        map_seats = calculat_tags(map_seats, tags_belongs)
+        seats.push(...map_seats)
+    }
+
+    var guests_result = await getGuests(project_id)
+    var guests_group = await getGuestsGroup(project_id)
+    var requests = await getRequests(project_id)
     var guests = calculat_guests(guests_result, guests_group)
     guests = calculat_requests(guests, requests)
-    seats = calculat_tags(seats, tags_belongs)
+
     var total_iterations = Math.min(seats.length, guests.length)
     var completed_iterations = 0
     var progress = 0
@@ -352,27 +393,36 @@ router.get('/scheduling/:map_name', async (req, res)=>{
         progress = Math.round(progress)
         res.write(`data: { "progress": ${progress} }\n\n`);
 
-        await addAllMatchs([{guest: guest_id, seat: seat_id}], map_result[0].id)
+        await addAllMatchs([{guest: guest_id, seat: seat_id}], project_id)
     }
 })
 
-router.get('/seats_score/:map_name', async (req, res)=>{
-    res.set('Access-Control-Allow-Origin', req.get('origin'))
-    var map_result = await getMap(req.params.map_name)
-    var seats_result = await getSeats(map_result[0].id)
-    var groups_result = await getSeatsGroups(map_result[0].id)
-    var tags_belongs = await getTagsBelongs(map_result[0].id)
-    var guests_result = await getGuests(map_result[0].id)
-    var guests_group = await getGuestsGroup(map_result[0].id)
-    var requests = await getRequests(map_result[0].id)
-    var seats_in_groups = await getSeatsInGroups(groups_result, map_result[0].id)
-    seats_in_groups = seats_in_groups.map(group => group.map(seat => seat.seat))
-    var seats = calculat_seats(seats_result, map_result[0], seats_in_groups) 
-    var guests = calculat_guests(guests_result, guests_group)
-    seats = calculat_tags(seats, tags_belongs)
-    guests = calculat_requests(guests, requests)
-    res.json(getSeatWithTag(seats, "17"))
-    // res.json([seats, guests])
+router.get('/seats_score/:project_name/:map_name', async (req, res)=>{
+    var project_id = await get_project_id(req.params.project_name)
+    var {map_name} = req.params
+    var seats = []
+    var map = await getMap(project_id, map_name)
+    var seats_result = await getSeats(map.id)
+    var groups_result = await getSeatsGroups(map.id)
+    var tags_belongs = await getTagsBelongs(map.id)
+    var map_seats = calculat_seats(seats_result, map, groups_result) 
+    map_seats = calculat_tags(map_seats, tags_belongs)
+    seats.push(...map_seats)
+    // var maps = await getMaps(project_id)
+    // for(let map of maps){
+    //     var seats_result = await getSeats(map.id)
+    //     var groups_result = await getSeatsGroups(map.id)
+    //     var tags_belongs = await getTagsBelongs(map.id)
+    //     var map_seats = calculat_seats(seats_result, map, groups_result) 
+    //     map_seats = calculat_tags(map_seats, tags_belongs)
+    //     seats.push(...map_seats)
+    // }
+    // var guests_result = await getGuests(project_id)
+    // var guests_group = await getGuestsGroup(project_id)
+    // var requests = await getRequests(project_id)
+    // var guests = calculat_guests(guests_result, guests_group)
+    // guests = calculat_requests(guests, requests)
+    res.json(seats)
 })
 
 module.exports = router
