@@ -4,6 +4,7 @@ const actions_router = require('./src/routs/actions')
 const project_router = require('./src/routs/project')
 var bodyParser = require('body-parser')
 const wss = require('./src/socket')
+const api = require('./src/routs/api')
 
 const app = express()
 const port = 3020
@@ -20,6 +21,7 @@ app.use((req, res, next)=>{
 app.use('/map', map_router)
 app.use('/actions', actions_router)
 app.use('/project', project_router)
+app.use('/api', api)
 
 const server = app.listen(port, function(){
     console.log("express start")

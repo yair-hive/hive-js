@@ -331,6 +331,25 @@ function addAllMatchs(matching_list, project_id){
     })
 }
 
+function getMap(project_name, map_name){
+    return new Promise(async (resolve, reject) => {
+        var project_id = await get_project_id(project_name)
+        var query_string = `SELECT * FROM maps WHERE project = '${project_id}' AND map_name = '${map_name}';`;
+        con.query(query_string, (err, result)=>{
+            if(err) reject(err)
+            else resolve(result[0])
+        })       
+    })
+}
+
+async function getSeatsScoreByMap(project_name, map_name){
+    var map = await getMap(project_name, map_name)
+    var seats_result = await getSeats(map.id)
+    var groups_result = await getSeatsGroups(map.id)
+    var map_seats = calculat_seats(seats_result, map, groups_result) 
+    return map_seats
+}
+
 router.get('/scheduling/:project_name', async (req, res)=>{
     res.set('Access-Control-Allow-Origin', req.get('origin'))
 
@@ -395,6 +414,12 @@ router.get('/scheduling/:project_name', async (req, res)=>{
 
         await addAllMatchs([{guest: guest_id, seat: seat_id}], project_id)
     }
+})
+
+router.get('/score/:project_name/:map_name', async (req, res)=>{
+    var {project_name, map_name} = req.params
+    var seats = await getSeatsScoreByMap(project_name, map_name)
+    res.json(seats)
 })
 
 router.get('/seats_score/:project_name/:map_name', async (req, res)=>{

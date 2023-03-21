@@ -4,7 +4,8 @@ const con = mysql.createConnection({
     host: "localhost",
     user: "root",
     password: "",
-    database: "hive"
+    database: "hive",
+    multipleStatements: true
 })
 
 con.connect()
