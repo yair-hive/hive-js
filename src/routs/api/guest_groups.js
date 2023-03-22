@@ -14,7 +14,7 @@ guest_groups['get_all'] = async function(request_body){
     var project_id = await get_project_id(project_name); 
     var query_string = `SELECT * FROM guests_groups WHERE project='${project_id}'`;
     var results = await db_get(query_string);
-    var new_results = [];
+    var new_results = {};
     results.forEach(row =>{
         new_results[row['id']] = row;
     })
