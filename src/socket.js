@@ -8,7 +8,7 @@ wss.on('connection', function connection(ws, req) {
     connection starts`)
     ws.on('message', function message(data) {
         wss.clients.forEach(function(client) {
-            client.send(data.toString());
+            if(client.readyState === ws.OPEN) client.send(data.toString());
         });        
     });
 });

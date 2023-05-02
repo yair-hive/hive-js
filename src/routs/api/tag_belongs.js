@@ -4,6 +4,7 @@ const {
     check_parameters,
     get_map_id,
     get_tag_id,
+    get_project_id,
 } = require('./functions')
 
 const tag_belongs = {}
@@ -23,20 +24,26 @@ tag_belongs['create'] = async function(request_body){
     return await db_post(query_string);
 };
 tag_belongs['get_all'] = async function(request_body){
-    check_parameters(['map_name', 'project_name'], request_body);
-    var map_name = request_body['map_name'];
-    var project_name = request_body['project_name'];
-    var map_id = await get_map_id(map_name, project_name);  
-    var query_string = `SELECT * FROM tag_belongs WHERE map = '${map_id}'`;
-    var results = await db_get(query_string);
+    check_parameters(['project_name'], request_body);
+    var project_name = request_body['project_name']; 
+    var project_id = await get_project_id(project_name);   
+    var query_string = `SELECT * FROM maps WHERE project='${project_id}'`;
+    var maps = await db_get(query_string);
+    var all_results = []
+    for(let map of maps){
+        var query_string = `SELECT * FROM tag_belongs WHERE map = '${map.id}'`;
+        var results = await db_get(query_string);
+        all_results.push(...results)
+    }
     var new_results = {};
-    results.forEach(row =>{
+    all_results.forEach(row =>{
         new_results[row['seat']] = [];
     })
-    results.forEach(row =>{
+    all_results.forEach(row =>{
         new_results[row['seat']].push(row);
     })
     return new_results;
+    
 };
 
 module.exports = tag_belongs
