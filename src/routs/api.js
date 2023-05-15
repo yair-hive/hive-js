@@ -5,6 +5,7 @@ const maps = require('./api/maps')
 const seats = require('./api/seats')
 const guests = require('./api/guests')
 const tags = require('./api/tags')
+const users = require('./api/users')
 const map_elements = require('./api/map_elements')
 const projects = require('./api/projects')
 const guest_groups = require('./api/guest_groups')
@@ -25,6 +26,7 @@ const actions = {
     seats_groups,
     tag_belongs,
     requests_belongs,
+    users
 }
 
 router.post('/', async (req, res)=>{
@@ -43,7 +45,7 @@ router.post('/', async (req, res)=>{
             throw new Error('action dont exists');
         }
         var respons = {
-            data: await actions[category][action](req.body),
+            data: await actions[category][action](req.body, req),
             msg: 'ok'
         }
         res.json(respons)

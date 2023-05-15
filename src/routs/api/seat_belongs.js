@@ -45,5 +45,14 @@ seat_belongs['delete_all'] = async function(request_body){
     var query_string = `DELETE FROM belong WHERE project='${project_id}'`;
     return await db_get(query_string);
 };
+seat_belongs['set_fixed'] = async function(request_body){
+    check_parameters(['id', 'value'], request_body);
+    var id = request_body['id'];
+    var value = request_body['value'];
+    if(value == 'true') value = 1
+    if(value == 'false') value = 0
+    var query_string = `UPDATE belong SET fixed = '${value}' WHERE id = '${id}'`;
+    return await db_get(query_string);
+};
 
 module.exports = seat_belongs

@@ -6,6 +6,17 @@ var bodyParser = require('body-parser')
 const wss = require('./src/socket')
 const api = require('./src/routs/api')
 const fs = require('fs')
+const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
+
+const options = {
+	host: 'localhost',
+	user: 'root',
+	password: '',
+	database: 'hive'
+};
+
+const sessionStore = new MySQLStore(options);
 
 const app = express()
 var file = fs.readFileSync('config.json')
@@ -20,6 +31,13 @@ app.use((req, res, next)=>{
     next()
 })
 
+app.use(session({
+	store: sessionStore,
+    secret: 'yair', 
+    resave: true,
+    saveUninitialized: true,
+}));
+
 app.get('/', (req, res)=>{
     res.send('hello world')
 })
@@ -29,7 +47,7 @@ app.use('/project', project_router)
 app.use('/api', api)
 
 const server = app.listen(port, function(){
-    // console.log(`express start on port ${port}`)
+    console.log(`express start on port ${port}`)
     // process.send(`express start on port ${port}`)
 })
 

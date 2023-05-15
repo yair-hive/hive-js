@@ -16,16 +16,17 @@ guests['create'] = async function(request_body){
     var project_name = request_body['project_name'];
     var project_id = await get_project_id(project_name); 
     var query_string = "";
-    data.forEach(async guest => {
+    for(let guest of data){
         var first_name = guest[0];
         var last_name = guest[1];
         var guest_group = guest[2];
+        if(!first_name || !last_name || !guest_group) continue;
         var guest_group_id = await get_group_id(project_id, guest_group);
         var s_query_string = `SELECT * FROM guests WHERE first_name='${first_name}' AND last_name='${last_name}' AND guest_group='${guest_group}' AND project='${project_id}'`;
         if(await check_not_exists_f(s_query_string)){
             query_string += `INSERT INTO guests(first_name, last_name, guest_group, project) VALUES('${first_name}', '${last_name}', '${guest_group_id}', '${project_id}');`;
         }
-    })
+    }
     await db_post(query_string);
 };
 guests['get_all'] = async function(request_body){

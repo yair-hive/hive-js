@@ -175,6 +175,15 @@ function calculat_requests(guests, requests){
         return guest
     })
 }
+function calculat_seats_belongs(belongs){
+    var by_seat = {}
+    var by_guest = {}
+    belongs.forEach(belong => {
+        by_seat[belong.seat] = belong.fixed
+        by_guest[belong.guest] = belong.fixed
+    })
+    return [by_guest, by_seat]
+}
 
 function get_project_id(project_name){
     return new Promise((resolve, reject) => {
@@ -201,6 +210,15 @@ function getMaps(project_id){
             if(err) reject(err)
             else resolve(map_result)
         })
+    })
+}
+function getSeatsBelongs(project_id){
+    return new Promise((resolve, reject) => {
+        var query_string = `SELECT * FROM belong WHERE project = '${project_id}'`;
+        con.query(query_string, (err, result)=>{
+            if(err) reject(err)
+            else resolve(result)
+        })       
     })
 }
 function getSeats(map_id){
@@ -374,8 +392,19 @@ router.get('/scheduling/:project_name', async (req, res)=>{
     }
 
     var guests_result = await getGuests(project_id)
+    var seats_belongs = await getSeatsBelongs(project_id)
     var guests_group = await getGuestsGroup(project_id)
     var requests = await getRequests(project_id)
+
+    var [belogs_by_guest, belong_by_seat] = calculat_seats_belongs(seats_belongs)
+
+    guests_result = guests_result.filter((guest)=>{
+        return belogs_by_guest[guest.id] != 1
+    })
+    seats = seats.filter((seat)=>{
+        return belong_by_seat[seat.id] != 1
+    })
+
     var guests = calculat_guests(guests_result, guests_group)
     guests = calculat_requests(guests, requests)
 
