@@ -38,6 +38,16 @@ maps['get'] = async function(request_body){
 };
 maps['update'] = async function(request_body){
     var filds = {}
+    filds['map_name'] = async function(){
+        check_parameters(['map_name', 'project_name', 'new_name'], request_body)
+        var map_name = request_body['map_name']
+        var project_name = request_body['project_name']
+        var new_name = request_body['new_name']
+        var map_id = await get_map_id(map_name, project_name); 
+        var query_string = `UPDATE maps SET map_name = '${new_name}' WHERE id = '${map_id}'`;
+        return await db_post(query_string);
+    }
+
     filds['cols_to'] = async function(){
         check_parameters(['map_name', 'project_name', 'to'], request_body);
         var map_name = request_body['map_name'];

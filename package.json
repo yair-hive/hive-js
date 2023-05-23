@@ -1,9 +1,8 @@
 {
-  "name": "hive-js",
+  "name": "hive-server",
   "version": "0.1.0",
   "description": "server side api for the hive project",
-  "main": "ser.js",
-  "bin": "ser.js",
+  "bin": "server.js",
   "scripts": {
     "start": "nodemon server.js"
   },
@@ -11,6 +10,11 @@
     "type": "git",
     "url": "git+https://github.com/yair-hive/hive-js\u001b[C.git"
   },
+  "pkg": {
+    "targets": [ "node18-win-x64" ],
+    "outputPath": "dist"
+  },
+ 
   "keywords": [
     "hive",
     "js"
@@ -29,6 +33,7 @@
     "mysql": "^2.18.1",
     "node-windows": "^1.0.0-beta.8",
     "nodemon": "^2.0.20",
+    "uuid": "^9.0.0",
     "ws": "^8.12.0"
   }
 }

@@ -7,19 +7,43 @@ const {
     get_group_id,
 } = require('./functions')
 
+const wss = require('../../socket')
+
 const guests = {}
 
+
+async function getGuestGroupScore(guest_id){
+    var query_string = `SELECT * FROM guests WHERE id = '${guest_id}'`
+    var guest = await db_get(query_string)
+    var guest_group = guest[0].guest_group
+    var query_string = `SELECT * FROM guests_groups WHERE id = '${guest_group}'`
+    var group = await db_get(query_string)
+    return group[0].score
+}
+
 guests['create'] = async function(request_body){
-    check_parameters(['guests', 'project_name'], request_body);
+    check_parameters(['guests', 'project_name', 'socketId'], request_body);
     var guests = request_body['guests'];
+    var socketId = request_body['socketId']
     var data = JSON.parse(guests);
     var project_name = request_body['project_name'];
     var project_id = await get_project_id(project_name); 
     var query_string = "";
+    var total_iterations = data.length +1
+    var completed_iterations = 0
+    var progress = 0
+    function update_progress(){
+        wss.sendTo(socketId, {action: 'progress', progress})
+    }
+    var progressInterval = setInterval(update_progress, 500)
     for(let guest of data){
         var first_name = guest[0];
         var last_name = guest[1];
         var guest_group = guest[2];
+        completed_iterations++
+        progress = (completed_iterations / total_iterations) * 100
+        progress = Math.round(progress)
+        // wss.sendTo(socketId, {action: 'progress', progress});
         if(!first_name || !last_name || !guest_group) continue;
         var guest_group_id = await get_group_id(project_id, guest_group);
         var s_query_string = `SELECT * FROM guests WHERE first_name='${first_name}' AND last_name='${last_name}' AND guest_group='${guest_group}' AND project='${project_id}'`;
@@ -28,6 +52,10 @@ guests['create'] = async function(request_body){
         }
     }
     await db_post(query_string);
+    completed_iterations++
+    progress = (completed_iterations / total_iterations) * 100
+    clearInterval(progressInterval)
+    update_progress()
 };
 guests['get_all'] = async function(request_body){
     check_parameters(['project_name'], request_body);
@@ -73,6 +101,8 @@ guests['update'] = async function(request_body){
         check_parameters(['guest_id', 'score'], request_body);
         var guest_id = request_body['guest_id'];
         var score = request_body['score'];
+        var group_score = await getGuestGroupScore(guest_id)
+        score = Number(score) - Number(group_score)
         var query_string = `UPDATE guests SET score = '${score}' WHERE id = '${guest_id}'`;
         await db_post(query_string);
     };

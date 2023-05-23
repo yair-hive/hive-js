@@ -6,6 +6,8 @@ const {
     get_map_id,
 } = require('./functions')
 
+const {getSeatsScoreByMap} = require('../get_seats_score')
+
 const seats = {}
 
 seats['create'] = async function(request_body){
@@ -25,9 +27,10 @@ seats['get'] = async function(request_body){
     check_parameters(['map_name', 'project_name'], request_body);
     var map_name = request_body['map_name'];
     var project_name = request_body['project_name'];
-    var map_id = await get_map_id(map_name, project_name);      
-    var query_string = `SELECT * FROM seats WHERE map = '${map_id}'`;
-    return await db_get(query_string);
+    // var map_id = await get_map_id(map_name, project_name);      
+    // var query_string = `SELECT * FROM seats WHERE map = '${map_id}'`;
+    // return await db_get(query_string);
+    return await getSeatsScoreByMap(project_name, map_name)
 };
 seats['get_all'] = async function(request_body){
     check_parameters(['project_name'], request_body);

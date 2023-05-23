@@ -38,7 +38,10 @@ users['create'] = async function(request_body, req){
 users['delete'] = async function(request_body, req){
     check_parameters(['user_id'], request_body);
 }
-users['get_all'] = async function(request_body, req){}
+users['get_all'] = async function(request_body, req){
+    var query_string = `SELECT * FROM users`
+    return await db_get(query_string)
+}
 users['get_active'] = async function(request_body, req){
     return req.session.user?.user_name
 }
