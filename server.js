@@ -5,7 +5,6 @@ const project_router = require('./src/routs/project')
 var bodyParser = require('body-parser')
 const wss = require('./src/socket')
 const api = require('./src/routs/api')
-const fs = require('fs')
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 
@@ -19,8 +18,7 @@ const options = {
 const sessionStore = new MySQLStore(options);
 
 const app = express()
-var file = fs.readFileSync('config.json')
-const port = JSON.parse(file.toString()).port
+const port = 3025
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json())
